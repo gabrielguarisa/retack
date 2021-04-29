@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "retack"
+version = "0.1.0"
+description = ""
+authors = ["Gabriel Guarisa <gabrielguarisa@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+scikit-learn = "^0.24.2"
+PyYAML = "^5.4.1"
+pandas = "^1.2.4"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+pytest-cov = "^2.11.1"
+black = "^21.4b2"
+pre-commit = "^2.12.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 79
+target-version = ['py36', 'py37', 'py38']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 79

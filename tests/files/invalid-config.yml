@@ -1,0 +1,3 @@
+models:
+  - sklearn.dummy.DummyClassifier
+  - invalid.model.path
