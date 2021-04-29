@@ -1,0 +1,2 @@
+models:
+  - tests.test_experiment.CustomModel
