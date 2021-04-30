@@ -7,21 +7,23 @@ class CustomModel:
     pass
 
 
-def test_create_experiment_manager(model_classes):
-    em = ExperimentManager(models=model_classes)
+def test_create_experiment_manager(model_classes, metric_funcs):
+    em = ExperimentManager(models=model_classes, metric_funcs=metric_funcs)
     assert isinstance(em, ExperimentManager)
     assert all([a == b for a, b in zip(em.models, model_classes)])
+    assert all([a == b for a, b in zip(em.metric_funcs, metric_funcs)])
 
 
 def test_create_experiment_manager_without_models():
     with pytest.raises(ValueError):
-        _ = ExperimentManager(models=[])
+        _ = ExperimentManager(models=[], metric_funcs=[])
 
 
-def test_experiment_manager_load(model_classes):
+def test_experiment_manager_load(model_classes, metric_funcs):
     em = ExperimentManager.load("tests/files/valid-config.yml")
     assert isinstance(em, ExperimentManager)
     assert all([a == b for a, b in zip(em.models, model_classes)])
+    assert all([a == b for a, b in zip(em.metric_funcs, metric_funcs)])
 
 
 def test_experiment_manager_load_invalid_filename():
@@ -34,7 +36,8 @@ def test_experiment_manager_load_invalid_model():
         _ = ExperimentManager.load("tests/files/invalid-config.yml")
 
 
-def test_experiment_manager_load_custom_model():
+def test_experiment_manager_load_custom_model(metric_funcs):
     em = ExperimentManager.load("tests/files/custom-model.yml")
     assert isinstance(em, ExperimentManager)
     assert em.models[0] == CustomModel
+    assert em.metric_funcs == metric_funcs

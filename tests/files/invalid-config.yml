@@ -1,3 +1,5 @@
 models:
   - sklearn.dummy.DummyClassifier
   - invalid.model.path
+metrics:
+  - sklearn.metrics.accuracy_score

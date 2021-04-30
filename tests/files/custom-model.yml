@@ -1,2 +1,4 @@
 models:
   - tests.test_experiment.CustomModel
+metrics:
+  - sklearn.metrics.accuracy_score

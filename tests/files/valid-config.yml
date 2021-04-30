@@ -1,3 +1,5 @@
 models:
   - sklearn.dummy.DummyClassifier
   - sklearn.svm.SVC
+metrics:
+  - sklearn.metrics.accuracy_score
