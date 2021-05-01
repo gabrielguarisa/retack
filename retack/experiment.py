@@ -1,6 +1,6 @@
 import os.path
 from pydoc import locate
-from typing import Callable, Dict, List, Type, Union
+from typing import Any, Callable, Dict, List, Type, Union
 
 import pandas as pd
 import yaml
@@ -67,7 +67,10 @@ class Experiment(object):
 
 class ExperimentManager(object):
     def __init__(
-        self, models: List[Type[BaseEstimator]], metric_funcs: List[Callable]
+        self,
+        models: List[Type[BaseEstimator]],
+        metric_funcs: List[Callable],
+        model_args: List[Dict[str, Any]],
     ):
         if len(models) == 0:
             raise ValueError("The number of models must be greater than zero!")
@@ -79,6 +82,7 @@ class ExperimentManager(object):
 
         self._models = models
         self._metric_funcs = metric_funcs
+        self._model_args = model_args
 
     @property
     def models(self) -> List[Type[BaseEstimator]]:
@@ -87,6 +91,10 @@ class ExperimentManager(object):
     @property
     def metric_funcs(self) -> List[Callable]:
         return self._metric_funcs
+
+    @property
+    def model_args(self) -> List[Dict[str, Any]]:
+        return self._model_args
 
     @staticmethod
     def _import_element(name: str) -> object:
@@ -103,20 +111,36 @@ class ExperimentManager(object):
             )
         with open(filename, "r") as file:
             data = yaml.load(file, Loader=yaml.FullLoader)
+        models = []
+        model_args = []
+        for info in data["models"]:
+            if isinstance(info, dict):
+                model_name = list(info.keys())[0]
+                models.append(cls._import_element(model_name))
+                args = info[model_name][0].get("args", {})
+                model_args.append(args if isinstance(args, dict) else args[0])
+            elif isinstance(info, str):
+                models.append(cls._import_element(info))
+                model_args.append({})
+            else:
+                raise TypeError("Invalid YAML format!")
+
         return cls(
-            models=[
-                cls._import_element(name) for name in data.get("models", [])
-            ],
+            models=models,
             metric_funcs=[
                 cls._import_element(name) for name in data.get("metrics", [])
             ],
+            model_args=model_args,
         )
 
     def run(
         self, X, y, cv_method: BaseCrossValidator = KFold(), n_jobs: int = None
     ):
         return Experiment(
-            models=[m() for m in self.models],
+            models=[
+                self.models[i](**self.model_args[i])
+                for i in range(len(self.models))
+            ],
             metric_funcs=self.metric_funcs,
             cv_method=cv_method,
             n_jobs=n_jobs,
