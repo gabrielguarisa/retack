@@ -21,7 +21,14 @@ class Experiment(object):
     ):
         self._models = {}
         if isinstance(models, list):
-            self._models = {m.__class__.__name__: m for m in models}
+            for m in models:
+                model_name = m.__class__.__name__
+                i = 1
+                while model_name in self._models:
+                    model_name = f"{m.__class__.__name__}_{i}"
+                    i += 1
+                else:
+                    self._models[model_name] = m
         elif isinstance(models, dict):
             self._models = models
         else:
