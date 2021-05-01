@@ -70,7 +70,7 @@ class ExperimentManager(object):
         self,
         models: List[Type[BaseEstimator]],
         metric_funcs: List[Callable],
-        model_args: List[Dict[str, Any]],
+        model_args: List[Dict[str, Any]] = None,
     ):
         if len(models) == 0:
             raise ValueError("The number of models must be greater than zero!")
@@ -79,6 +79,11 @@ class ExperimentManager(object):
             raise ValueError(
                 "The number of metric_funcs must be greater than zero!"
             )
+
+        if model_args is None:
+            model_args = [{} for _ in range(len(models))]
+        elif len(model_args) != len(models):
+            raise ValueError("models and model_args must be the same lenght!")
 
         self._models = models
         self._metric_funcs = metric_funcs
