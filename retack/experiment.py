@@ -1,5 +1,4 @@
 import os.path
-from pydoc import locate
 from typing import Any, Callable, Dict, List, Type, Union
 
 import pandas as pd
@@ -7,6 +6,8 @@ import yaml
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold, cross_val_predict
 from sklearn.model_selection._split import BaseCrossValidator
+
+from retack.utils import import_element, unique_name
 
 
 class Experiment(object):
@@ -21,14 +22,11 @@ class Experiment(object):
     ):
         self._models = {}
         if isinstance(models, list):
-            for m in models:
-                model_name = m.__class__.__name__
-                i = 1
-                while model_name in self._models:
-                    model_name = f"{m.__class__.__name__}_{i}"
-                    i += 1
-                else:
-                    self._models[model_name] = m
+            for model in models:
+                model_name = unique_name(
+                    model.__class__.__name__, list(self._models.keys())
+                )
+                self._models[model_name] = model
         elif isinstance(models, dict):
             self._models = models
         else:
@@ -101,13 +99,6 @@ class ExperimentManager(object):
     def model_args(self) -> List[Dict[str, Any]]:
         return self._model_args
 
-    @staticmethod
-    def _import_element(name: str) -> object:
-        elem = locate(name)
-        if elem is None:
-            raise ImportError(f"Failed to import {name}")
-        return elem
-
     @classmethod
     def load(cls, filename: str):
         if not os.path.isfile(filename):
@@ -121,11 +112,11 @@ class ExperimentManager(object):
         for info in data["models"]:
             if isinstance(info, dict):
                 model_name = list(info.keys())[0]
-                models.append(cls._import_element(model_name))
+                models.append(import_element(model_name))
                 args = info[model_name][0].get("args", {})
                 model_args.append(args if isinstance(args, dict) else args[0])
             elif isinstance(info, str):
-                models.append(cls._import_element(info))
+                models.append(import_element(info))
                 model_args.append({})
             else:
                 raise TypeError("Invalid YAML format!")
@@ -133,7 +124,7 @@ class ExperimentManager(object):
         return cls(
             models=models,
             metric_funcs=[
-                cls._import_element(name) for name in data.get("metrics", [])
+                import_element(name) for name in data.get("metrics", [])
             ],
             model_args=model_args,
         )
