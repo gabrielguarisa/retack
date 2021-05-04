@@ -7,7 +7,7 @@ from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold, cross_val_predict
 from sklearn.model_selection._split import BaseCrossValidator
 
-from retack.utils import import_element, unique_name
+from retack.utils import import_element, load_elements, unique_name
 
 
 class Experiment(object):
@@ -34,7 +34,7 @@ class Experiment(object):
         self._cv_method = cv_method
         self._metric_funcs = metric_funcs
         self._n_jobs = n_jobs
-        self._metrics = None
+        self._results = None
 
         if X is not None and y is not None:
             self.__call__(X, y)
@@ -44,8 +44,8 @@ class Experiment(object):
         return self._models
 
     @property
-    def metrics(self) -> pd.DataFrame:
-        return self._metrics
+    def results(self) -> pd.DataFrame:
+        return self._results
 
     def __call__(self, X, y) -> pd.DataFrame:
         results = []
@@ -57,10 +57,10 @@ class Experiment(object):
 
         cols = ["model"] + [f.__name__ for f in self._metric_funcs]
 
-        self._metrics = pd.DataFrame(results, columns=cols).set_index(
+        self._results = pd.DataFrame(results, columns=cols).set_index(
             keys="model"
         )
-        return self._metrics
+        return self._results
 
 
 class ExperimentManager(object):
@@ -68,6 +68,8 @@ class ExperimentManager(object):
         self,
         models: List[Type[BaseEstimator]],
         metric_funcs: List[Callable],
+        *,
+        model_names: List[str] = None,
         model_args: List[Dict[str, Any]] = None,
     ):
         if len(models) == 0:
@@ -80,12 +82,19 @@ class ExperimentManager(object):
 
         if model_args is None:
             model_args = [{} for _ in range(len(models))]
-        elif len(model_args) != len(models):
+        if model_names is None:
+            model_names = []
+            for i in range(len(models)):
+                model_names.append(
+                    unique_name(models[i].__class__.__name__, model_names)
+                )
+        elif len(model_args) != len(models) or len(model_names) != len(models):
             raise ValueError("models and model_args must be the same lenght!")
 
         self._models = models
         self._metric_funcs = metric_funcs
         self._model_args = model_args
+        self._model_names = model_names
 
     @property
     def models(self) -> List[Type[BaseEstimator]]:
@@ -99,44 +108,47 @@ class ExperimentManager(object):
     def model_args(self) -> List[Dict[str, Any]]:
         return self._model_args
 
+    @property
+    def model_names(self) -> List[str]:
+        return self._model_names
+
+    def to_dict(self) -> Dict[str, List[Any]]:
+        return {
+            "models": self.models,
+            "metric_funcs": self.metric_funcs,
+            "model_names": self.model_names,
+            "model_args": self.model_args,
+        }
+
     @classmethod
     def load(cls, filename: str):
         if not os.path.isfile(filename):
             raise FileNotFoundError(
                 f"File {filename} (or the relevant path) does not exist."
             )
+
         with open(filename, "r") as file:
             data = yaml.load(file, Loader=yaml.FullLoader)
-        models = []
-        model_args = []
-        for info in data["models"]:
-            if isinstance(info, dict):
-                model_name = list(info.keys())[0]
-                models.append(import_element(model_name))
-                args = info[model_name][0].get("args", {})
-                model_args.append(args if isinstance(args, dict) else args[0])
-            elif isinstance(info, str):
-                models.append(import_element(info))
-                model_args.append({})
-            else:
-                raise TypeError("Invalid YAML format!")
+
+        models = load_elements(data["models"])
 
         return cls(
-            models=models,
+            models=models["elements"],
+            model_args=models["args"],
+            model_names=models["names"],
             metric_funcs=[
                 import_element(name) for name in data.get("metrics", [])
             ],
-            model_args=model_args,
         )
 
     def run(
         self, X, y, cv_method: BaseCrossValidator = KFold(), n_jobs: int = None
     ):
         return Experiment(
-            models=[
-                self.models[i](**self.model_args[i])
+            models={
+                self.model_names[i]: self.models[i](**self.model_args[i])
                 for i in range(len(self.models))
-            ],
+            },
             metric_funcs=self.metric_funcs,
             cv_method=cv_method,
             n_jobs=n_jobs,
