@@ -5,8 +5,8 @@ from sklearn.svm import SVC
 
 
 @pytest.fixture()
-def model_classes():
-    return [DummyClassifier, SVC]
+def models():
+    return {"DummyClassifier": DummyClassifier(), "SVC": SVC()}
 
 
 @pytest.fixture()

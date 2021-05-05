@@ -1,5 +1,8 @@
+import inspect
 from pydoc import locate
 from typing import Any, Dict, List, Tuple, Union
+
+import numpy as np
 
 
 def import_element(import_str: str) -> object:
@@ -38,7 +41,7 @@ def load_single_element(
     return element, element_name, element_args
 
 
-def load_elements(data: Dict[str, Any]) -> Dict[str, List[Any]]:
+def load_elements(data: List[Any]) -> Dict[str, List[Any]]:
     output = {"elements": [], "names": [], "args": []}
     for info in data:
         element, name, args = load_single_element(info)
@@ -46,4 +49,32 @@ def load_elements(data: Dict[str, Any]) -> Dict[str, List[Any]]:
         output["names"].append(unique_name(name, output["names"]))
         output["args"].append(args)
 
+    return output
+
+
+def set_params_to_dict(
+    params: Union[Dict[str, Any], List[Any]], variable_name: str = None
+):
+    if len(params) == 0:
+        raise ValueError(
+            "The number of {} must be greater than zero!".format(
+                "params" if variable_name is None else variable_name
+            )
+        )
+    output = {}
+    if isinstance(params, list) or isinstance(params, np.ndarray):
+        for i in range(len(params)):
+            name = unique_name(
+                params[i].__name__
+                if inspect.isfunction(params[i])
+                else params[i].__class__.__name__,
+                list(output.keys()),
+            )
+            output[name] = params[i]
+    elif isinstance(params, dict):
+        output = params
+    else:
+        if variable_name is None:
+            raise TypeError("Invalid type!")
+        raise TypeError(f"Invalid type for {variable_name}!")
     return output
