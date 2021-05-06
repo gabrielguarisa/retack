@@ -1,7 +1,7 @@
 .PHONY: tests precommit
 
 tests:
-	pytest --cov-report term-missing --cov=retack tests/
+	poetry run pytest --cov-report term-missing --cov=retack tests/
 
 precommit:
-	pre-commit run --all-files
+	poetry run pre-commit run --all-files
