@@ -1,5 +1,6 @@
+import inspect
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Type
+from typing import Any, Callable, Dict, List, Type, Union
 
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold
@@ -21,13 +22,13 @@ class ExperimentBase(ABC):
 class Optimizer(ExperimentBase):
     def __init__(
         self,
-        model: Type[BaseEstimator],
+        model: Union[Type[BaseEstimator], BaseEstimator],
         model_args: Dict[str, Any],
         metric_func: Callable,
         cv_method: BaseCrossValidator = KFold(),
         n_jobs: int = None,
     ):
-        self._model = model
+        self._model = model if inspect.isclass(model) else model.__class__
         self._model_args = model_args
         self._metric_func = metric_func
 

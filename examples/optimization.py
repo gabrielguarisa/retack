@@ -25,4 +25,3 @@ oo = OptunaOptimizer(
 results = oo.run(ds.data, ds.target, n_trials=100)
 
 print(results)
-# ({'criterion': 'mae', 'max_depth': 4}, 3.5479249011857705)

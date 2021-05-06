@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Type
+from typing import Any, Callable, Dict, Type, Union
 
 import optuna
 from sklearn.base import BaseEstimator
@@ -11,7 +11,7 @@ from retack.base import Optimizer
 class OptunaOptimizer(Optimizer):
     def __init__(
         self,
-        model: Type[BaseEstimator],
+        model: Union[Type[BaseEstimator], BaseEstimator],
         model_args: Dict[str, Any],
         metric_func: Callable,
         cv_method: BaseCrossValidator = KFold(),
