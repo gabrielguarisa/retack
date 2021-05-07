@@ -26,12 +26,14 @@ class Optimizer(ExperimentBase):
         model: Union[Type[BaseEstimator], BaseEstimator],
         model_args: Dict[str, Any],
         metric_func: Callable,
+        metric_func_args: Dict[str, Any] = {},
         cv_method: BaseCrossValidator = KFold(),
         n_jobs: int = None,
     ):
         self._model = get_instance_or_class(model, return_instance=False)
         self._model_args = model_args
         self._metric_func = metric_func
+        self._metric_func_args = metric_func_args
 
         self._results = None
         super().__init__(cv_method, n_jobs)
@@ -47,3 +49,11 @@ class Optimizer(ExperimentBase):
     @property
     def model_args(self) -> Dict[str, Any]:
         return self._model_args
+
+    @property
+    def metric_func(self) -> Callable:
+        return self._metric_func
+
+    @property
+    def metric_func_args(self) -> Dict[str, Any]:
+        return self._metric_func_args

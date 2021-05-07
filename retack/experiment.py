@@ -111,6 +111,7 @@ class Experiment(ExperimentBase):
         model_name: str,
         optimizer: Union[Optimizer, Type[Optimizer]],
         metric_func: Callable,
+        metric_func_args: Dict[str, Any] = {},
         model_args: Dict[str, Any] = {},
         use_optimizer_args: bool = True,
         **kwargs,
@@ -127,6 +128,7 @@ class Experiment(ExperimentBase):
             model=self.models[model_name],
             model_args=model_args,
             metric_func=metric_func,
+            metric_func_args=metric_func_args,
             **kwargs,
         )
 

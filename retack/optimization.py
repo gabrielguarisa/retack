@@ -14,11 +14,14 @@ class OptunaOptimizer(Optimizer):
         model: Union[Type[BaseEstimator], BaseEstimator],
         model_args: Dict[str, Any],
         metric_func: Callable,
+        metric_func_args: Dict[str, Any] = {},
         cv_method: BaseCrossValidator = KFold(),
         n_jobs: int = None,
         **kwargs,
     ):
-        super().__init__(model, model_args, metric_func, cv_method, n_jobs)
+        super().__init__(
+            model, model_args, metric_func, metric_func_args, cv_method, n_jobs
+        )
         self.new_study(**kwargs)
         self._X = None
         self._y = None
@@ -46,7 +49,9 @@ class OptunaOptimizer(Optimizer):
             n_jobs=self._n_jobs,
         )
 
-        self._results.append(self._metric_func(self._y, y_pred))
+        self._results.append(
+            self.metric_func(self._y, y_pred, **self.metric_func_args)
+        )
 
         return self._results[-1]
 
