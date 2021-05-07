@@ -2,11 +2,11 @@ from sklearn import datasets
 from sklearn.metrics import mean_absolute_error
 from sklearn.tree import DecisionTreeRegressor
 
-from retack.optimization import OptunaOptimizer
+import retack as rk
 
 ds = datasets.load_boston()
 
-oo = OptunaOptimizer(
+oo = rk.OptunaOptimizer(
     model=DecisionTreeRegressor,
     model_args={
         "criterion": {
