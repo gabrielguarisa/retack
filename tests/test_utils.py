@@ -1,10 +1,12 @@
 import pandas as pd
 import pytest
+from sklearn.svm import SVC
 
 from retack.utils import (
+    get_element_name,
+    get_instance_or_class,
     import_element,
-    load_single_element,
-    set_params_to_dict,
+    load_element,
     unique_name,
 )
 
@@ -61,46 +63,46 @@ def test_unique_name(original_name, list_of_names, expected_name):
         ),
     ],
 )
-def test_load_single_element(
+def test_load_element(
     data, expected_element, expected_element_name, expected_element_args
 ):
-    element, element_name, element_args = load_single_element(data)
-    assert element is expected_element
-    assert element_name == expected_element_name
-    assert element_args == expected_element_args
+    info = load_element(data)
+    assert info["element"] is expected_element
+    assert info["name"] == expected_element_name
+    assert info["args"] == expected_element_args
 
 
 def test_load_invalid_single_element():
     with pytest.raises(TypeError):
-        _ = load_single_element(["pandas.DataFrame"])
+        _ = load_element(["pandas.DataFrame"])
 
 
-def test_set_params_to_dict_without_params():
-    with pytest.raises(ValueError):
-        _ = set_params_to_dict([])
+@pytest.mark.parametrize(
+    "element,expected",
+    [
+        (SVC, "SVC"),
+        (SVC(), "SVC"),
+        (unique_name, "unique_name"),
+    ],
+)
+def test_get_element_name(element, expected):
+    assert get_element_name(element) == expected
 
 
-def test_set_params_to_dict_with_invalid_type():
-    with pytest.raises(TypeError):
-        _ = set_params_to_dict("pandas.DataFrame")
-
-    with pytest.raises(TypeError):
-        _ = set_params_to_dict("pandas.DataFrame", "tmp")
-
-
-def test_set_params_to_dict():
-    from sklearn.metrics import accuracy_score
-    from sklearn.svm import SVC
-
-    output = set_params_to_dict(
-        [
-            SVC(),
-            accuracy_score,
-            accuracy_score,
-        ]
+@pytest.mark.parametrize(
+    "element,return_instance,expected",
+    [
+        (SVC, True, SVC),
+        (SVC, False, SVC),
+        (SVC(), True, SVC),
+        (SVC(), False, SVC),
+    ],
+)
+def test_get_instance_or_class(element, return_instance, expected):
+    result = get_instance_or_class(
+        element=element, return_instance=return_instance
     )
-    assert list(output.keys()) == [
-        "SVC",
-        "accuracy_score",
-        "accuracy_score_1",
-    ]
+    if return_instance:
+        assert isinstance(result, expected)
+    else:
+        assert result == expected

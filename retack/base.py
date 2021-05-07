@@ -1,10 +1,11 @@
-import inspect
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Type, Union
 
 from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold
 from sklearn.model_selection._split import BaseCrossValidator
+
+from retack.utils import get_instance_or_class
 
 
 class ExperimentBase(ABC):
@@ -15,7 +16,7 @@ class ExperimentBase(ABC):
         self._n_jobs = n_jobs
 
     @abstractmethod
-    def run(self, X, y, **kwargs):
+    def run(self, X, y, **kwargs):  # pragma: no cover
         pass
 
 
@@ -28,7 +29,7 @@ class Optimizer(ExperimentBase):
         cv_method: BaseCrossValidator = KFold(),
         n_jobs: int = None,
     ):
-        self._model = model if inspect.isclass(model) else model.__class__
+        self._model = get_instance_or_class(model, return_instance=False)
         self._model_args = model_args
         self._metric_func = metric_func
 

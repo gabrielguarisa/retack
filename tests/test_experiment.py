@@ -27,6 +27,11 @@ def test_create_experiment_without_models():
         _ = Experiment(models=[], metric_funcs=[])
 
 
+def test_create_experiment_with_invalid_models():
+    with pytest.raises(TypeError):
+        _ = Experiment(models="DecisionTreeRegressor", metric_funcs=[])
+
+
 def test_experiment_load_custom_model(metric_funcs):
     em = Experiment(models=[CustomModel()], metric_funcs=metric_funcs)
     assert isinstance(em, Experiment)
