@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Type, Union
+from typing import Any, Callable, Dict, Tuple, Type, Union
 
 import optuna
 from sklearn.base import BaseEstimator
@@ -50,7 +50,7 @@ class OptunaOptimizer(Optimizer):
 
         return self._results[-1]
 
-    def run(self, X, y, **kwargs):
+    def run(self, X, y, **kwargs) -> Tuple[Dict[str, Any], float]:
         self._results = []
         self._X = X
         self._y = y

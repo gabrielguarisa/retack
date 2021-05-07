@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Type, Union
+from typing import Any, Callable, Dict, List, Tuple, Type, Union
 
 import numpy as np
 import pandas as pd
@@ -6,7 +6,7 @@ from sklearn.base import BaseEstimator
 from sklearn.model_selection import KFold, cross_val_predict
 from sklearn.model_selection._split import BaseCrossValidator
 
-from retack.base import ExperimentBase
+from retack.base import ExperimentBase, Optimizer
 from retack.utils import get_element_name, get_instance_or_class, unique_name
 
 
@@ -26,6 +26,9 @@ class Experiment(ExperimentBase):
         cv_method: BaseCrossValidator = KFold(),
         n_jobs: int = None,
     ):
+        self._models = {}
+        self._metric_funcs = {}
+        self._optimizers = {}
         self.set_models(models)
         self.set_metric_funcs(metric_funcs, metric_funcs_args)
         self._results = None
@@ -103,6 +106,30 @@ class Experiment(ExperimentBase):
         else:
             raise TypeError("Invalid type for metric_funcs")
 
+    def set_optimizer(
+        self,
+        model_name: str,
+        optimizer: Union[Optimizer, Type[Optimizer]],
+        metric_func: Callable,
+        model_args: Dict[str, Any] = {},
+        use_optimizer_args: bool = True,
+        **kwargs,
+    ):
+        if model_name not in self.models:
+            raise ValueError(f"{model_name} model not found")
+
+        if isinstance(optimizer, Optimizer) and use_optimizer_args:
+            model_args = optimizer.model_args
+
+        self._optimizers[model_name] = get_instance_or_class(
+            optimizer, return_instance=False
+        )(
+            model=self.models[model_name],
+            model_args=model_args,
+            metric_func=metric_func,
+            **kwargs,
+        )
+
     @property
     def models(self) -> Dict[str, BaseEstimator]:
         return self._models
@@ -118,6 +145,10 @@ class Experiment(ExperimentBase):
     @property
     def results(self) -> pd.DataFrame:
         return self._results
+
+    @property
+    def optimizers(self) -> Dict[str, Optimizer]:
+        return self._optimizers
 
     def run(self, X, y, **kwargs) -> pd.DataFrame:
         results = []
@@ -139,3 +170,24 @@ class Experiment(ExperimentBase):
             keys="model"
         )
         return self._results
+
+    def optimize(
+        self, model_name: str, X, y, return_model: bool = False, **kwargs
+    ) -> Union[
+        Tuple[Dict[str, Any], float],
+        Tuple[Dict[str, Any], float, BaseEstimator],
+    ]:
+        if model_name not in self.optimizers:
+            raise ValueError(f"{model_name} optimizer not found")
+        best_params, best_value = self.optimizers[model_name].run(
+            X, y, **kwargs
+        )
+        if return_model:
+            return (
+                best_params,
+                best_value,
+                get_instance_or_class(
+                    self.models[model_name], return_instance=False
+                )(**best_params),
+            )
+        return best_params, best_value
