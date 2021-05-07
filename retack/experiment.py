@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Type, Union
+from typing import Any, Callable, Dict, List, Type, Union
 
 import numpy as np
 import pandas as pd
@@ -19,12 +19,15 @@ class Experiment(ExperimentBase):
             List[BaseEstimator],
             List[Type[BaseEstimator]],
         ],
-        metric_funcs: List[Callable],
+        metric_funcs: Union[List[Callable], Dict[str, Callable]],
+        metric_funcs_args: Union[
+            List[Dict[str, Any]], Dict[str, Dict[str, Any]]
+        ] = None,
         cv_method: BaseCrossValidator = KFold(),
         n_jobs: int = None,
     ):
         self.set_models(models)
-        self._metric_funcs = metric_funcs
+        self.set_metric_funcs(metric_funcs, metric_funcs_args)
         self._results = None
         super().__init__(cv_method=cv_method, n_jobs=n_jobs)
 
@@ -56,13 +59,61 @@ class Experiment(ExperimentBase):
         else:
             raise TypeError("Invalid type for models!")
 
+    def set_metric_funcs(
+        self,
+        metric_funcs: Union[List[Callable], Dict[str, Callable]],
+        metric_funcs_args: Union[
+            List[Dict[str, Any]], Dict[str, Dict[str, Any]]
+        ] = {},
+    ):
+        if (
+            type(metric_funcs) != type(metric_funcs_args)
+            and metric_funcs_args is not None
+        ):
+            raise TypeError(
+                "metric_funcs and metric_funcs_args must have the same type"
+            )
+        elif metric_funcs_args is None:
+            metric_funcs_args = (
+                {}
+                if isinstance(metric_funcs, dict)
+                else [{} for _ in range(len(metric_funcs))]
+            )
+
+        self._metric_funcs = {}
+        self._metric_funcs_args = {}
+        if isinstance(metric_funcs, list) or isinstance(
+            metric_funcs, np.ndarray
+        ):
+            if len(metric_funcs) != len(metric_funcs_args):
+                raise ValueError(
+                    "metric_funcs and metric_funcs_args have different sizes"
+                )
+            for i in range(len(metric_funcs)):
+                name = unique_name(
+                    get_element_name(metric_funcs[i]),
+                    list(self._models.keys()),
+                )
+                self._metric_funcs[name] = metric_funcs[i]
+                self._metric_funcs_args[name] = metric_funcs_args[i]
+        elif isinstance(metric_funcs, dict):
+            for name, metric_func in metric_funcs.items():
+                self._metric_funcs[name] = metric_func
+                self._metric_funcs_args[name] = metric_funcs_args.get(name, {})
+        else:
+            raise TypeError("Invalid type for metric_funcs")
+
     @property
     def models(self) -> Dict[str, BaseEstimator]:
         return self._models
 
     @property
-    def metric_funcs(self) -> List[BaseEstimator]:
+    def metric_funcs(self) -> Dict[str, Callable]:
         return self._metric_funcs
+
+    @property
+    def metric_funcs_args(self) -> Dict[str, Dict[str, Callable]]:
+        return self._metric_funcs_args
 
     @property
     def results(self) -> pd.DataFrame:
@@ -74,9 +125,15 @@ class Experiment(ExperimentBase):
             y_pred = cross_val_predict(
                 model, X, y, cv=self._cv_method, n_jobs=self._n_jobs
             )
-            results.append([name] + [f(y, y_pred) for f in self._metric_funcs])
+            results.append(
+                [name]
+                + [
+                    func(y, y_pred, **self.metric_funcs_args[name])
+                    for name, func in self.metric_funcs.items()
+                ]
+            )
 
-        cols = ["model"] + [f.__name__ for f in self._metric_funcs]
+        cols = ["model"] + list(self.metric_funcs.keys())
 
         self._results = pd.DataFrame(results, columns=cols).set_index(
             keys="model"
