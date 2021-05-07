@@ -1,3 +1,5 @@
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, Tuple, Type, Union
 
 import optuna
@@ -55,9 +57,22 @@ class OptunaOptimizer(Optimizer):
 
         return self._results[-1]
 
-    def run(self, X, y, **kwargs) -> Tuple[Dict[str, Any], float]:
+    def run(self, X, y, n_jobs=None, **kwargs) -> Tuple[Dict[str, Any], float]:
         self._results = []
         self._X = X
         self._y = y
-        self._study.optimize(self.__call__, **kwargs)
+
+        if n_jobs is None or n_jobs == 1:
+            self._study.optimize(self.__call__, **kwargs)
+        elif n_jobs == -1 or n_jobs > 1:
+            n_jobs = multiprocessing.cpu_count() if n_jobs == -1 else n_jobs
+
+            with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+                for _ in range(n_jobs):
+                    executor.submit(
+                        self._study.optimize, self.__call__, **kwargs
+                    )
+        else:
+            raise ValueError("Invalid n_jobs value")
+
         return self._study.best_params, self._study.best_value
