@@ -25,6 +25,7 @@ class Experiment(ExperimentBase):
         ] = None,
         cv_method: BaseCrossValidator = KFold(),
         n_jobs: int = None,
+        verbose: bool = False,
     ):
         self._models = {}
         self._metric_funcs = {}
@@ -32,7 +33,7 @@ class Experiment(ExperimentBase):
         self.set_models(models)
         self.set_metric_funcs(metric_funcs, metric_funcs_args)
         self._results = None
-        super().__init__(cv_method=cv_method, n_jobs=n_jobs)
+        super().__init__(cv_method=cv_method, n_jobs=n_jobs, verbose=verbose)
 
     def set_models(
         self,
@@ -155,8 +156,15 @@ class Experiment(ExperimentBase):
     def run(self, X, y, **kwargs) -> pd.DataFrame:
         results = []
         for name, model in self.models.items():
+            if self._verbose:
+                print(f"Model: {name}")
             y_pred = cross_val_predict(
-                model, X, y, cv=self._cv_method, n_jobs=self._n_jobs
+                model,
+                X,
+                y,
+                cv=self._cv_method,
+                n_jobs=self._n_jobs,
+                verbose=self._verbose,
             )
             results.append(
                 [name]
@@ -165,6 +173,8 @@ class Experiment(ExperimentBase):
                     for name, func in self.metric_funcs.items()
                 ]
             )
+            if self._verbose:
+                print(results[-1])
 
         cols = ["model"] + list(self.metric_funcs.keys())
 

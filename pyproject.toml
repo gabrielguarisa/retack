@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "retack"
-version = "0.1.4"
+version = "0.1.41"
 description = ""
 license = "MIT"
 readme = "README.md"

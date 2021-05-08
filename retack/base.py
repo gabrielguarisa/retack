@@ -10,10 +10,14 @@ from retack.utils import get_instance_or_class
 
 class ExperimentBase(ABC):
     def __init__(
-        self, cv_method: BaseCrossValidator = KFold(), n_jobs: int = None
+        self,
+        cv_method: BaseCrossValidator = KFold(),
+        n_jobs: int = None,
+        verbose: bool = False,
     ):
         self._cv_method = cv_method
         self._n_jobs = n_jobs
+        self._verbose = verbose
 
     @abstractmethod
     def run(self, X, y, **kwargs):  # pragma: no cover
