@@ -1,15 +1,14 @@
 [tool.poetry]
 name = "retack"
-version = "0.1.41"
+version = "0.2.0"
 description = ""
 license = "MIT"
 readme = "README.md"
 authors = ["Gabriel Guarisa <gabrielguarisa@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.7.1"
 scikit-learn = "^0.24.2"
-PyYAML = "^5.4.1"
 pandas = "^1.2.4"
 optuna = "^2.7.0"
 
