@@ -4,6 +4,8 @@ from sklearn.tree import DecisionTreeRegressor
 
 import retack as rk
 
+print(rk.__version__)
+
 ds = datasets.load_boston()
 
 oo = rk.OptunaOptimizer(
@@ -22,6 +24,11 @@ oo = rk.OptunaOptimizer(
     direction="minimize",
 )
 
-results = oo.run(ds.data, ds.target, n_trials=100)
+results = oo.run(
+    ds.data,
+    ds.target,
+    n_trials=100,
+    early_stopping=True,
+)
 
 print(results)
